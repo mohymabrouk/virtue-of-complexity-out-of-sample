@@ -1,0 +1,32 @@
+{
+  "target": "KMZ Table 1 Panel A, Nonlinear, T=12, P=12000, z=1e3: Sharpe 0.47 (mean over seeds)",
+  "paper_sharpe": 0.47,
+  "tolerance": 0.1,
+  "ours_sharpe_mean_over_seeds": 0.31035718702334114,
+  "ours_sharpe_seed_sd": 0.016506741125486207,
+  "ours_alpha_t_mean_over_seeds": 1.060778877358024,
+  "ours_ir_mean_over_seeds": 0.11309798592252945,
+  "ours_r2_mean_over_seeds": 0.010498881647656878,
+  "raw_convention": {
+    "sharpe": 0.38298665823241845,
+    "alpha_t": 2.7612934277936447,
+    "ir": 0.293602176798657
+  },
+  "raw_convention_ridgeless": {
+    "sharpe": 0.3391069088626532,
+    "alpha_t": 2.572408088226734,
+    "ir": 0.2735184195622852
+  },
+  "nagel_2025_table1_raw_ridgeless": {
+    "alpha_t": 2.417,
+    "ir": 0.255
+  },
+  "n_seeds": 300,
+  "n_months": 1080,
+  "first_target": "1931-01",
+  "last_target": "2020-12",
+  "runtime_s": 891.9,
+  "config_hash": "c737047adb5c40f4",
+  "code_hash": "eb3e44ded8f11321",
+  "within_tolerance": false
+}
