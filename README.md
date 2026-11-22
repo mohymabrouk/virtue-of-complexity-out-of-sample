@@ -1,5 +1,7 @@
 # Virtue of complexity, out of sample: after the paper's sample and across 41 countries
 
+[![tests](https://github.com/mohymabrouk/virtue-of-complexity-out-of-sample/actions/workflows/tests.yml/badge.svg)](https://github.com/mohymabrouk/virtue-of-complexity-out-of-sample/actions/workflows/tests.yml)
+
 Retests Kelly, Malamud & Zhou (*Journal of Finance*, 2024) after publication and in 41 non-US markets, on free data, CPU only.
 
 ## Headline
