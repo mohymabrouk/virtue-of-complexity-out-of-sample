@@ -259,3 +259,10 @@ the background with a log file.
 12. Reporting additions decided after seeing the results (descriptive only, no new model runs): a post-sample
     year-by-year table of the target cell, and a US bridge table that puts the Welch-Goyal model (Part A positions)
     next to the JKP-predictor US model on the same 1956-10..2025-12 months.
+13. 2026-11-22, after publication on GitHub: `scripts/external_replication_check.py` reads the only public KMZ
+    replication we found (nkonts, commit 40ab1c8; data only, none of its code executed) and writes
+    `results/external_replication_check.json`. It standardises returns with `returns.rolling(12).std()` and targets
+    `returns.shift(-1)`, i.e. the look-ahead window of item 4 in the README's Replication section, and reports a
+    Sharpe of 0.42 at P = 12,000, z = 10³ (500 draws). README only: a headline paragraph and Replication item 5.
+    No model, test or result of this project changed. The intro line no longer refers to a series, and the
+    post-sample cumulative figure moved under the headline.

@@ -1,0 +1,27 @@
+{
+ "repo": "https://github.com/nkonts/replication-the-virtue-of-complexity-in-return-prediction",
+ "commit": "40ab1c8",
+ "standardisation_lines": [
+  "returns_std = returns.rolling(12).std()",
+  "returns = returns / returns_std"
+ ],
+ "target_lines": [
+  "backtest = Backtest(z=1000, T=12).predict(X=rff_data, y=returns.shift(-1))",
+  "backtest = Backtest(z=z, T=T).predict(X=data[COLUMNS], y=returns.shift(-1))",
+  "sim = Backtest(z=z, T=T).predict(X=rff_data, y=returns.shift(-1))"
+ ],
+ "why_look_ahead": "returns.rolling(12).std() at month t+1 includes the month-t+1 return; the target is returns.shift(-1), so the forecast made at t is scored on R(t+1) / std(R(t-10..t+1)).",
+ "cell": {
+  "gamma": 2,
+  "z": 1000,
+  "c": 1000,
+  "P": 12000,
+  "T": 12
+ },
+ "n_draws": 500,
+ "voc_sharpe_mean_over_draws": 0.4180544281831089,
+ "voc_ir_mean_over_draws": 0.19778151099712768,
+ "market_sharpe": 0.6361517464540427,
+ "returns": "S&P index price returns (pct_change of the Welch-Goyal 'Index' column), not excess returns",
+ "data_file": "PredictorData2021 - Monthly.csv (Welch-Goyal, to 2021-12)"
+}
