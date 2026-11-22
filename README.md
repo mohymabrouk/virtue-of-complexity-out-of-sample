@@ -1,6 +1,6 @@
 # Virtue of complexity, out of sample: after the paper's sample and across 41 countries
 
-Project 2 of 5 in a series of paper-based quant research projects (CPU only, one laptop).
+Retests Kelly, Malamud & Zhou (*Journal of Finance*, 2024) after publication and in 41 non-US markets, on free data, CPU only.
 
 ## Headline
 
@@ -23,6 +23,14 @@ standardised spec, and in raw returns the alpha stops improving beyond 24 featur
 the US conclusions: five years of post-sample data give only about 17% power to detect the paper's
 information ratio, and our primary implementation does not hit the paper's in-sample Sharpe. The cross-country
 evidence depends on neither, and it points the same way.
+
+**In our tests the paper's in-sample Sharpe is approached only with a look-ahead volatility scaling.** Scaling
+each month's return by a 12-month volatility window that includes that same month gives 0.46 (paper: 0.47).
+The only public replication we found (nkonts) uses exactly that window and reports 0.42. With the window
+ending the month before, so the scale is known when the position is taken, we get 0.31. KMZ's own code is
+not public, so this is the most likely cause of the gap, not a proven one (Replication, item 5).
+
+![VoC vs buy-and-hold after the paper's sample](results/fig_post_cumulative.png)
 
 
 ### What was tested
@@ -191,8 +199,16 @@ What we checked (all on 1931-2020 only, scripts in `scripts/diag_*.py`, log in `
    gives a VoC (z = 10³) Sharpe of 0.29, a root-mean-square instead of a std 0.35. A window that
    includes the forecast month (look-ahead, so not adopted) gives 0.46, and it reproduces two of KMZ's
    linear numbers (ridgeless Sharpe -0.11 vs -0.11; z = 10³ alpha t 3.1 vs 3.1) but not the
-   rest (linear z = 10³ Sharpe 0.60 vs 0.46; VoC alpha t 1.9 vs 2.9). Without KMZ's code we
-   cannot say which step differs.
+   rest (linear z = 10³ Sharpe 0.60 vs 0.46; VoC alpha t 1.9 vs 2.9). KMZ's code is not
+   public, so we cannot confirm which step differs; item 5 is the closest evidence.
+5. **An independent public replication uses the look-ahead window.** [nkonts' replication](https://github.com/nkonts/replication-the-virtue-of-complexity-in-return-prediction)
+   (commit `40ab1c8`) standardises with `returns_std = returns.rolling(12).std()` and
+   `returns = returns / returns_std`, then targets `returns.shift(-1)`. The forecast made in month t is therefore
+   scored on R(t+1) divided by a std that includes R(t+1). Averaged over its 500 draws at P = 12,000,
+   z = 10³, it reports a Sharpe of 0.42, with buy-and-hold at 0.64 (S&P price returns,
+   Welch-Goyal data to 2021). That is our look-ahead variant's convention (0.46), and it is much closer to
+   the paper's 0.47 than our lagged version (0.31). Source:
+   `results/external_replication_check.json`, written by `scripts/external_replication_check.py`.
 
 Hence the two conventions in every table: the standardised one is the paper's text as we read it; the raw one
 reproduces numbers obtained with the authors' code.
@@ -213,8 +229,6 @@ The full grid (140 cells, both conventions, both averaging schemes) is in `resul
 ![paper raw](results/fig_curve_paper_raw.png)
 
 ![post raw](results/fig_curve_post_raw.png)
-
-![post cumulative](results/fig_post_cumulative.png)
 
 ![positions](results/fig_positions_us.png)
 
@@ -445,8 +459,9 @@ The post-sample test ran once, finishing at 2026-11-21T22:45:55+00:00 (config ha
   `pipeline.py` (stages), `report.py`, `readme.py`, `readme_text.py`.
 - `tests/`: the six required tests (ridge, RFF, leak, strategy, metrics, replication) and helpers.
 - `scripts/`: `thin_slice.py` (first end-to-end check), `diag_*.py` (exploratory replication diagnostics,
-  paper sample only) and `replication_diagnostics.py` (the same checks, written to
-  `results/replication_diagnostics.json`).
+  paper sample only), `replication_diagnostics.py` (the same checks, written to
+  `results/replication_diagnostics.json`) and `external_replication_check.py` (reads nkonts' public replication,
+  writes `results/external_replication_check.json`).
 - `results/`: `tables.md`, `partA_*` (tables, complexity curves, positions), `partB_*` (per-country tables,
   curves, strategy returns, pooled table, country selection), `replication_check.json`, `test_log.jsonl`,
   `replication_diagnostics.json`, `data_manifest.json` (URLs, sizes, SHA-256, download dates), figures `fig_*.png`.

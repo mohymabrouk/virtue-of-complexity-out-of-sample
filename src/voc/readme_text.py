@@ -100,11 +100,14 @@ def render(x) -> str:
         pool_t=pool_std.alpha_t, pool_d=pool_std.dsharpe, pool_rt=pool_raw.alpha_t, pool_rd=pool_raw.dsharpe,
         vm_q=raw_q[vm].alpha_t, qr_sr=raw_q[TARGET].sharpe, qr_bh=raw_q["Buy-and-hold"].sharpe,
         power=x["power"], chance=0.025 * n_ctry, vm_wins=_wins_against(vm, "std"), n_ctry2=n_ctry,
+        la_sr=x["diag"]["la_sr"], ext_sr=x["diag"]["ext_sr"],
     )
     parts = [
         "# Virtue of complexity, out of sample: after the paper's sample and across 41 countries\n",
-        "Project 2 of 5 in a series of paper-based quant research projects (CPU only, one laptop).\n",
+        "Retests Kelly, Malamud & Zhou (*Journal of Finance*, 2024) after publication and in 41 non-US markets, "
+        "on free data, CPU only.\n",
         "## Headline\n", head,
+        "![VoC vs buy-and-hold after the paper's sample](results/fig_post_cumulative.png)\n",
         INTRO.format(n_seeds_a=chk["n_seeds"], n_seeds_b=x["meta_b"]["n_seeds"], n_post=n_post,
                      first=fr["first_target"], last=fr["last_target"]),
         "## Main performance table (US)\n",
@@ -123,7 +126,7 @@ def render(x) -> str:
         "## Complexity curves\n", CURVES_TEXT,
         "![paper std](results/fig_curve_paper_std.png)\n\n![post std](results/fig_curve_post_std.png)\n\n"
         "![paper raw](results/fig_curve_paper_raw.png)\n\n![post raw](results/fig_curve_post_raw.png)\n\n"
-        "![post cumulative](results/fig_post_cumulative.png)\n\n![positions](results/fig_positions_us.png)\n",
+        "![positions](results/fig_positions_us.png)\n",
         "## Part B: the same specification on 41 non-US markets\n",
         PARTB_TEXT.format(n_ctry=n_ctry, countries=", ".join(c.upper() for c in x["countries"]), n_seeds=x["meta_b"]["n_seeds"]),
         f"**Standardised returns.**\n\n{tab_std}\n\n{report.partB_counts('std')}\n\n"
@@ -162,6 +165,12 @@ standardised spec, and in raw returns the alpha stops improving beyond 24 featur
 the US conclusions: five years of post-sample data give only about {power:.0%} power to detect the paper's
 information ratio, and our primary implementation does not hit the paper's in-sample Sharpe. The cross-country
 evidence depends on neither, and it points the same way.
+
+**In our tests the paper's in-sample Sharpe is approached only with a look-ahead volatility scaling.** Scaling
+each month's return by a 12-month volatility window that includes that same month gives {la_sr:.2f} (paper: 0.47).
+The only public replication we found (nkonts) uses exactly that window and reports {ext_sr:.2f}. With the window
+ending the month before, so the scale is known when the position is taken, we get {p_std:.2f}. KMZ's own code is
+not public, so this is the most likely cause of the gap, not a proven one (Replication, item 5).
 """
 PARTB_RESULTS = """
 **Reading Part B.** Across the {n_ctry} countries the c = 1000, z = 10³ strategy has a median Sharpe of
@@ -232,8 +241,16 @@ What we checked (all on 1931-2020 only, scripts in `scripts/diag_*.py`, log in `
    gives a VoC (z = 10³) Sharpe of {lag_sr:.2f}, a root-mean-square instead of a std {rms_sr:.2f}. A window that
    includes the forecast month (look-ahead, so not adopted) gives {la_sr:.2f}, and it reproduces two of KMZ's
    linear numbers (ridgeless Sharpe {la_lin0:.2f} vs -0.11; z = 10³ alpha t {la_lin_t:.1f} vs 3.1) but not the
-   rest (linear z = 10³ Sharpe {la_lin_sr:.2f} vs 0.46; VoC alpha t {la_t:.1f} vs 2.9). Without KMZ's code we
-   cannot say which step differs.
+   rest (linear z = 10³ Sharpe {la_lin_sr:.2f} vs 0.46; VoC alpha t {la_t:.1f} vs 2.9). KMZ's code is not
+   public, so we cannot confirm which step differs; item 5 is the closest evidence.
+5. **An independent public replication uses the look-ahead window.** [nkonts' replication]({ext_repo})
+   (commit `{ext_commit}`) standardises with `returns_std = returns.rolling(12).std()` and
+   `returns = returns / returns_std`, then targets `returns.shift(-1)`. The forecast made in month t is therefore
+   scored on R(t+1) divided by a std that includes R(t+1). Averaged over its {ext_n} draws at P = 12,000,
+   z = 10³, it reports a Sharpe of {ext_sr:.2f}, with buy-and-hold at {ext_mkt:.2f} (S&P price returns,
+   Welch-Goyal data to 2021). That is our look-ahead variant's convention ({la_sr:.2f}), and it is much closer to
+   the paper's 0.47 than our lagged version ({ours_sharpe_mean_over_seeds:.2f}). Source:
+   `results/external_replication_check.json`, written by `scripts/external_replication_check.py`.
 
 Hence the two conventions in every table: the standardised one is the paper's text as we read it; the raw one
 reproduces numbers obtained with the authors' code.
@@ -363,8 +380,9 @@ FILES = """
   `pipeline.py` (stages), `report.py`, `readme.py`, `readme_text.py`.
 - `tests/`: the six required tests (ridge, RFF, leak, strategy, metrics, replication) and helpers.
 - `scripts/`: `thin_slice.py` (first end-to-end check), `diag_*.py` (exploratory replication diagnostics,
-  paper sample only) and `replication_diagnostics.py` (the same checks, written to
-  `results/replication_diagnostics.json`).
+  paper sample only), `replication_diagnostics.py` (the same checks, written to
+  `results/replication_diagnostics.json`) and `external_replication_check.py` (reads nkonts' public replication,
+  writes `results/external_replication_check.json`).
 - `results/`: `tables.md`, `partA_*` (tables, complexity curves, positions), `partB_*` (per-country tables,
   curves, strategy returns, pooled table, country selection), `replication_check.json`, `test_log.jsonl`,
   `replication_diagnostics.json`, `data_manifest.json` (URLs, sizes, SHA-256, download dates), figures `fig_*.png`.

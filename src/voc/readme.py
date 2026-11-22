@@ -52,6 +52,9 @@ def write() -> None:
             "la_sr": la["voc_z1e3"]["sharpe"], "la_t": la["voc_z1e3"]["alpha_t"], "la_lin0": la["linear_ridgeless_sharpe"],
             "la_lin_t": la["linear_z1e3"]["alpha_t"], "la_lin_sr": la["linear_z1e3"]["sharpe"],
             "vm_t": d["nagel_volmom_raw"]["alpha_t"], "vm_ir": d["nagel_volmom_raw"]["ir"]}
+    ext = json.loads((R / "external_replication_check.json").read_text())
+    diag.update(ext_sr=ext["voc_sharpe_mean_over_draws"], ext_mkt=ext["market_sharpe"], ext_n=ext["n_draws"],
+                ext_commit=ext["commit"], ext_repo=ext["repo"])
     ctx = dict(diag=diag, chk=chk, s_p=s_p, s_q=s_q, vb=vb, n_ctry=n_ctry, pooled=pooled, n_post=n_post, years_post=years_post,
                se_post=se_post, power=power, mde=mde, first_run=first_run, countries=countries, jf=jf, jf_bh=jf_bh,
                meta_b=meta_b, tb=tb)
