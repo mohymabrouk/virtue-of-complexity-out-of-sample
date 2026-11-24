@@ -23,8 +23,8 @@ def _check():
 
 
 @pytest.mark.skipif(not CHECK.exists(), reason="run `python -m voc.cli replicate` first")
-@pytest.mark.xfail(strict=True, reason="Sharpe ~0.30 vs KMZ 0.47 with the return standardisation as the paper "
-                   "describes it; the gap is explained in README.md, section 'Replication'")
+@pytest.mark.xfail(strict=True, reason="Sharpe ~0.31 vs KMZ 0.47 with the pre-registered data construction; "
+                   "the gap comes from four data choices (README.md, Replication, item 6)")
 def test_replication_target_sharpe():
     c = _check()
     assert abs(c["ours_sharpe_mean_over_seeds"] - config.TARGET_SHARPE) <= config.TARGET_TOL
