@@ -281,3 +281,27 @@ the background with a log file.
     (returns and return scaling; predictors), P = 12,000, z ∈ {10⁻³, 10³}, 1931-01..2020-12 targets, 10 draws
     each (seeds 0-9). Output: `results/external_data_diagnostic.json`. Whatever it shows is reported in the note
     and README as is; the primary specification and every frozen result stay unchanged.
+15. **Result of 14 (10 draws each, `results/external_data_diagnostic.json`):** our unchanged engine on rrikrv's
+    data gives VoC (P = 12,000, z = 10³) Sharpe 0.49, alpha t 3.06, IR 0.33 and linear z = 10³ Sharpe 0.46,
+    alpha t 3.06, IR 0.33, ridgeless -0.11: KMZ's Table 1 without a look-ahead volatility window (one of its
+    data choices is not real-time, see 17). On our data the same engine gives 0.31. Swapping only its returns in gives 0.36, only its predictors 0.40. **So the replication gap comes from our
+    data construction, not from the timing of the volatility window; the look-ahead explanation in the README is
+    withdrawn.** The engine, the frozen primary specification and every frozen result are unchanged.
+16. **Pre-declared before running: construction B and its post-sample test.** Construction B rebuilds rrikrv's data
+    choices from our own raw files (Goyal 2025 file, to 2025-12):
+    (i) each predictor divided by its expanding std from its first month in the Goyal file (not from 1926-07);
+    (ii) inflation not lagged an extra month; (iii) the market return and the lagged-market predictor are Goyal's
+    `ret - Rfree` (S&P 500 with dividends) instead of Ken French's Mkt-RF; (iv) returns divided by the uncentred
+    RMS of the previous 12 months instead of their std. Everything else (RFF, γ = 2, T = 12, within-window
+    scaling, ridge, seeds) is the frozen specification.
+    - `scripts/construction_b.py` first checks that its builder with all four switches off reproduces our dataset
+      exactly, then adds the switches one at a time, cumulatively in the order (i)-(iv), on 1931-01..2020-12,
+      10 draws each, P = 12,000, z ∈ {10⁻³, 10³}.
+    - Then construction B with draws 0-299: the paper-sample replication (per-draw statistics averaged, as KMZ)
+      and **one post-sample score on 2021-01..2025-12 (60 months; the Goyal file ends in 2025-12)**, for the
+      seed-averaged forecast (as in the README's main table) and per draw. On the same 60 months, the frozen
+      construction A is recomputed with the same draws for a like-for-like comparison (its official 61-month
+      result stays the one in `results/test_log.jsonl`). Buy-and-hold and the linear ridge z = 10³ are reported
+      for both constructions. Scored once; output `results/construction_b.json`.
+    - Primary/secondary labels do not change: construction A stays the pre-registered primary; B is reported as
+      "the construction that reproduces the paper".
