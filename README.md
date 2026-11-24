@@ -23,14 +23,24 @@ And the rising Sharpe-complexity curve is mostly an averaging artefact: when the
 are averaged instead of their statistics, an average of 300 two-feature models matches the 12,000-feature Sharpe in the
 standardised spec, and in raw returns the alpha stops improving beyond 24 features. Two caveats bound
 the US conclusions: five years of post-sample data give only about 17% power to detect the paper's
-information ratio, and our primary implementation does not hit the paper's in-sample Sharpe. The cross-country
-evidence depends on neither, and it points the same way.
+information ratio, and our primary implementation does not hit the paper's in-sample Sharpe (the construction
+below does, and fails after the sample too). The cross-country evidence depends on neither, and it points the
+same way.
 
-**In our tests the paper's in-sample Sharpe is approached only with a look-ahead volatility scaling.** Scaling
-each month's return by a 12-month volatility window that includes that same month gives 0.46 (paper: 0.47).
-The only public replication we found (nkonts) uses exactly that window and reports 0.42. With the window
-ending the month before, so the scale is known when the position is taken, we get 0.31. KMZ's own code is
-not public, so this is the most likely cause of the gap, not a proven one (Replication, item 5).
+**The construction that reproduces the paper also fails after its sample.** With our engine unchanged, four data
+choices that the paper does not pin down move the 1931-2020 Sharpe from 0.31 to 0.49
+(alpha t 1.1 to 3.1; paper: 0.47 and 2.9): where the predictors' expanding standardisation
+starts, the inflation publication lag, the market-return series, and std vs uncentred RMS for the return scale
+(Replication, item 6). One of them uses CPI about two weeks before its release. Scored once on 2021-01 to
+2025-12, that construction earned a Sharpe of -0.06 against 0.71 for buy-and-hold (alpha
+t -0.4); ours earned -0.01 against 0.57 on the same 60 months.
+Write-up: [research note (PDF)](paper/note.pdf).
+
+*Correction, 2026-11-24.* An earlier version of this README said the paper's Sharpe is approached only with a
+look-ahead volatility window (one that includes the forecast month: 0.46 here; nkonts' replication,
+0.42). A third public replication (rrikrv) reaches it without one, and our engine on its data file
+reproduces KMZ's Table 1. The look-ahead window matches the Sharpe but not the alpha, so that explanation is
+withdrawn (`PLAN.md`, changes 14-16).
 
 ![VoC vs buy-and-hold after the paper's sample](results/fig_post_cumulative.png)
 
@@ -193,27 +203,58 @@ What we checked (all on 1931-2020 only, scripts in `scripts/diag_*.py`, log in `
    Nagel reports 2.42 and 0.26 from KMZ's own replication code (a second test checks this within ±0.5 / ±0.06,
    and passes). At z = 10³ the raw version gives alpha t 2.76 and IR
    0.29, close to KMZ's published 2.9 and 0.31.
-4. **The gap sits in the return standardisation.** Dividing returns by their trailing 12-month std (as the
-   paper describes) turns buy-and-hold into a volatility-managed market with a Sharpe of 0.53 over
+4. **Changing the return scaling alone does not close the gap.** Dividing returns by their trailing 12-month std
+   (as the paper describes) turns buy-and-hold into a volatility-managed market with a Sharpe of 0.53 over
    1931-2020 (raw: 0.46). Against that benchmark our VoC strategy has a Sharpe of
    0.31 and an alpha t of only 1.1. Variants of the
    std window (`results/replication_diagnostics.json`, 3 draws each) do not close the gap: one more month of lag
    gives a VoC (z = 10³) Sharpe of 0.29, a root-mean-square instead of a std 0.35. A window that
    includes the forecast month (look-ahead, so not adopted) gives 0.46, and it reproduces two of KMZ's
    linear numbers (ridgeless Sharpe -0.11 vs -0.11; z = 10³ alpha t 3.1 vs 3.1) but not the
-   rest (linear z = 10³ Sharpe 0.60 vs 0.46; VoC alpha t 1.9 vs 2.9). KMZ's code is not
-   public, so we cannot confirm which step differs; item 5 is the closest evidence.
-5. **An independent public replication uses the look-ahead window.** [nkonts' replication](https://github.com/nkonts/replication-the-virtue-of-complexity-in-return-prediction)
+   rest (linear z = 10³ Sharpe 0.60 vs 0.46; VoC alpha t 1.9 vs 2.9): a partial match.
+   It caps crash months (with the month in its own scale, an extreme return tends to ±√12 ≈ ±3.5 whatever its
+   size), which lifts buy-and-hold too.
+5. **One public replication uses the look-ahead window.** [nkonts' replication](https://github.com/nkonts/replication-the-virtue-of-complexity-in-return-prediction)
    (commit `40ab1c8`) standardises with `returns_std = returns.rolling(12).std()` and
    `returns = returns / returns_std`, then targets `returns.shift(-1)`. The forecast made in month t is therefore
    scored on R(t+1) divided by a std that includes R(t+1). Averaged over its 500 draws at P = 12,000,
    z = 10³, it reports a Sharpe of 0.42, with buy-and-hold at 0.64 (S&P price returns,
-   Welch-Goyal data to 2021). That is our look-ahead variant's convention (0.46), and it is much closer to
-   the paper's 0.47 than our lagged version (0.31). Source:
-   `results/external_replication_check.json`, written by `scripts/external_replication_check.py`.
+   Welch-Goyal data to 2021). That is our look-ahead variant's convention (0.46), closer to the paper's
+   0.47 than our lagged version (0.31), but item 4 shows it matches the Sharpe and not
+   the alpha, and item 6 shows it is not needed. Source: `results/external_replication_check.json`, written by
+   `scripts/external_replication_check.py`.
+6. **The gap is in four data-construction choices (added 2026-11-24, PLAN.md changes 14-16).** A third public
+   replication, [rrikrv](https://github.com/rrikrv/voc-replication) (commit `9c77321`), reaches the paper's numbers without a look-ahead
+   window. Our unchanged engine on its committed data file gives a VoC Sharpe of 0.49, alpha t
+   3.1 and IR 0.33, and linear z = 10³ 0.46 / alpha t 3.1, ridgeless
+   -0.11 (10 draws; `results/external_data_diagnostic.json`, written by
+   `scripts/diag_external_data.py`, which reads the file and runs none of its code). Swapping only its returns
+   into our data gives 0.36, only its predictors 0.40. Rebuilding its four data choices from our
+   own raw files and adding them one at a time (`scripts/construction_b.py`, `results/construction_b.json`)
+   locates the whole gap:
 
-Hence the two conventions in every table: the standardised one is the paper's text as we read it; the raw one
-reproduces numbers obtained with the authors' code.
+| Data construction (same engine; P = 12,000, z = 10³, 1931-2020, 10 draws) | VoC Sharpe | VoC α t | VoC IR | Linear z = 10³ Sharpe | Linear α t | Buy-and-hold Sharpe |
+|---|---|---|---|---|---|---|
+| A: ours, pre-registered (frozen) | 0.31 | 1.0 | 0.11 | 0.39 | 1.9 | 0.53 |
+| + (i) predictor std from each series' first month in the Goyal file | 0.34 | 1.3 | 0.14 | 0.39 | 1.9 | 0.53 |
+| + (ii) inflation not lagged (uses CPI about two weeks before its release) | 0.38 | 1.6 | 0.18 | 0.39 | 1.9 | 0.53 |
+| + (iii) S&P 500 return from the Goyal file instead of French Mkt-RF | 0.42 | 2.1 | 0.23 | 0.42 | 2.3 | 0.52 |
+| + (iv) uncentred RMS return volatility instead of std = **B** | 0.49 | 3.1 | 0.33 | 0.46 | 3.1 | 0.51 |
+| rrikrv's data file, our engine | 0.49 | 3.1 | 0.33 | 0.46 | 3.1 | 0.51 |
+| KMZ, Table 1 | 0.47 | 2.9 | 0.31 | 0.46 | 3.1 | – |
+
+   Each step adds 0.03 to 0.07; none closes the gap alone. Steps (i), (iii) and (iv) use only past data. Step (ii)
+   does not: CPI for month t is released during month t+1, which is why Welch and Goyal lag it and construction A
+   does too. The paper's text ("trailing 12-month return standard deviation", "expanding window historical standard
+   deviation", "the CRSP value-weighted index") fits A at least as well as B, so neither is "the" paper's
+   construction; the point is that the headline number moves from 0.31 to 0.49 with them, while
+   KMZ write that "none of our findings are sensitive to variations in how standardizations are implemented".
+   With 300 draws, construction B gives 0.49 (alpha t 3.1, IR 0.33) on
+   1931-2020; its post-sample score is in the headline.
+
+Hence the two conventions in every table: the standardised one is the paper's text as we read it (construction A);
+the raw one reproduces numbers obtained with the authors' code. Construction B, which reproduces the published
+standardised numbers, was added after the frozen runs and is reported separately (headline and item 6).
 
 ## Complexity curves
 
@@ -387,9 +428,30 @@ it is near zero.
    attributes to Buncic (2025), checked here directly.
 4. **The critique's simple rule, scored out of sample too.** Nagel's volatility-timed momentum is a baseline in
    every table, including the post-sample window and every country.
-5. **A located replication gap.** The data and the RFF machine reproduce numbers from KMZ's own code in raw-return
-   terms; the published standardised numbers are not reproduced from the paper's description of the return
-   standardisation.
+5. **A located replication gap.** With the engine held fixed, four data-construction choices that the paper does
+   not pin down move the headline Sharpe from about 0.31 to 0.49 (Replication, item 6), and the construction that
+   reproduces the paper was scored once after its sample too. A look-ahead volatility window, used by one public
+   replication, matches the Sharpe but not the alpha. Write-up: [`paper/note.pdf`](paper/note.pdf).
+
+
+## Related work (2025-2026)
+
+- **Nagel (2025)**, [NBER w34104](https://www.nber.org/papers/w34104): with T = 12, the RFF forecasts are close to
+  volatility-timed momentum; his Appendix A shows that scaling the target by a lagged volatility can itself create
+  spurious predictability. His rule is a baseline in every table here, including after 2020 and in 41 countries.
+- **Buncic (2025)**, [SSRN 5239006](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5239006): the result rests on
+  the zero-intercept restriction and on averaging performance measures across random draws. The "paper" vs
+  "ensemble" averaging comparison in this repo tests the second point on the same draws.
+- **Cartea, Jin & Shi (2025)**, [SSRN 5202064](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5202064):
+  measurement error in the predictors caps the benefit of complexity. Cartea & Shi (2025),
+  [SSRN 5930257](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5930257): random-feature gains can be mechanical.
+- **Fallahgoul (2025)**, [arXiv 2506.03780](https://arxiv.org/abs/2506.03780): within-window standardisation changes
+  the kernel the RFF approximate; learnability bounds that 12-month windows do not meet.
+- **Guo, Huang, Li & Yu (2026)**, [arXiv 2608.23761](https://arxiv.org/abs/2608.23761): ridge and ridgeless RFF
+  models do not beat the historical mean; their return scaling (uncentred second moment) is step (iv) of
+  construction B.
+- This repo adds what those papers could not: a test after the paper's sample, 41 countries, and a decomposition
+  of the replication gap into data choices with the engine held fixed.
 
 
 ## Limits
@@ -401,10 +463,11 @@ it is near zero.
   window can show is whether the strategy behaved as advertised (sign of the alpha, size of the Sharpe gap,
   behaviour in 2022), not whether it is significant. The window after the JF publication alone (2024-01 to
   2026-01, 25 months) is reported in the CSVs only.
-- **Replication not matched in the primary convention** (Sharpe 0.31 vs 0.47; see "Replication"). The
-  post-sample and Part B results of the standardised spec are those of *our* implementation of the paper's
-  text. The raw-return convention matches a number produced with KMZ's own code, which is why it is reported
-  alongside.
+- **Replication not matched in the primary construction** (Sharpe 0.31 vs 0.47; see "Replication"). The
+  post-sample and Part B results of the standardised spec are those of *our* construction of the paper's data.
+  Construction B reproduces the paper and was scored after its sample too (headline); it was defined after the
+  frozen runs, and one of its four choices (unlagged inflation) is not real-time. Part B was not rerun with B's
+  choices: (i)-(iii) are Welch-Goyal-specific, and the effect of (iv) on the 41 countries is untested.
 - **Part B is a different predictor set.** It tests "the same machine on comparable inputs", not KMZ's exact
   model; the US-with-JKP-predictors bridge shows how much the predictor change matters on its own.
 - **Countries are not independent.** Equity markets co-move, so 41 countries are worth fewer than 41
@@ -462,8 +525,12 @@ The post-sample test ran once, finishing at 2026-11-21T22:45:55+00:00 (config ha
 - `tests/`: the six required tests (ridge, RFF, leak, strategy, metrics, replication) and helpers.
 - `scripts/`: `thin_slice.py` (first end-to-end check), `diag_*.py` (exploratory replication diagnostics,
   paper sample only), `replication_diagnostics.py` (the same checks, written to
-  `results/replication_diagnostics.json`) and `external_replication_check.py` (reads nkonts' public replication,
-  writes `results/external_replication_check.json`).
+  `results/replication_diagnostics.json`), `external_replication_check.py` (reads nkonts' public replication,
+  writes `results/external_replication_check.json`), `diag_external_data.py` (runs our engine on rrikrv's data file,
+  writes `results/external_data_diagnostic.json`) and `construction_b.py` (the four-step decomposition and
+  construction B's post-sample score, `results/construction_b.json`, `results/construction_b_post_positions.csv`).
+- `paper/`: the research note (`note.tex`, `refs.bib`, compiled `note.pdf`); `numbers.json` / `numbers.tex` are
+  written from `results/` by `python -m voc.note`, so the note types no number in.
 - `results/`: `tables.md`, `partA_*` (tables, complexity curves, positions), `partB_*` (per-country tables,
   curves, strategy returns, pooled table, country selection), `replication_check.json`, `test_log.jsonl`,
   `replication_diagnostics.json`, `data_manifest.json` (URLs, sizes, SHA-256, download dates), figures `fig_*.png`.
@@ -477,7 +544,13 @@ The post-sample test ran once, finishing at 2026-11-21T22:45:55+00:00 (config ha
 - Nagel, S. (2025), "Seemingly Virtuous Complexity in Return Prediction", NBER Working Paper 34104 (read:
   https://www.nber.org/system/files/working_papers/w34104/w34104.pdf).
 - Buncic, D. (2025), "Simplified: A Closer Look at the Virtue of Complexity in Return Prediction", Stockholm
-  University working paper. Not read; cited only for the point Nagel (2025) attributes to it.
+  University working paper, SSRN 5239006. Not read in full (SSRN refuses automated access); cited for its abstract
+  and for the point Nagel (2025) attributes to it.
+- Guo, H., Huang, J., Li, R. and Yu, Y. (2026), "(Mis)Understanding Benign Overfitting in Equity Return
+  Prediction", arXiv 2608.23761 (read). Cartea, Á., Jin, Q. and Shi, Y. (2025), SSRN 5202064; Cartea, Á. and
+  Shi, Y. (2025), SSRN 5930257; Fallahgoul, H. (2025), arXiv 2506.03780 (abstracts read).
+- Public replications whose data or code were read (none executed): nkonts (commit 40ab1c8) and rrikrv
+  (commit 9c77321).
 - Welch, I. and Goyal, A. (2008), *Review of Financial Studies* 21(4); data: Amit Goyal's website
   (https://sites.google.com/view/agoyal145), file "All data up to 2025".
 - Jensen, T., Kelly, B. and Pedersen, L. (2023), "Is There a Replication Crisis in Finance?", *Journal of
