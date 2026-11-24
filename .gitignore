@@ -6,3 +6,10 @@ __pycache__/
 build/
 dist/
 logs/
+paper/*.aux
+paper/*.log
+paper/*.bbl
+paper/*.blg
+paper/*.out
+paper/*.toc
+paper/*.synctex.gz

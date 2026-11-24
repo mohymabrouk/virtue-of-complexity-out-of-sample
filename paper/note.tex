@@ -1,0 +1,228 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage[round,authoryear]{natbib}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage{setspace}
+\setstretch{1.08}
+\input{numbers.tex}
+\hypersetup{pdftitle={Four Data Choices and the Virtue of Complexity}, pdfauthor={Mohy Mabrouk},
+  pdfkeywords={return predictability, random features, machine learning, market timing, replication}}
+\newcommand{\Rplus}{R_{t+1}}
+
+\title{Four Data Choices and the Virtue of Complexity:\\ A Replication Note on Kelly, Malamud and Zhou (2024)}
+\author{Mohy Mabrouk\thanks{Code, data manifests and every number in this note:
+\url{https://github.com/mohymabrouk/virtue-of-complexity-out-of-sample}. The code and a first draft of the text were
+prepared with the help of an AI coding assistant (Claude, Anthropic); the author checked every number against the
+repository's result files and is responsible for all content and errors.}}
+\date{November 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent Kelly, Malamud and Zhou (2024) report an out-of-sample Sharpe ratio of \nKmzSR{} for market timing
+with 12{,}000 random Fourier features of the Welch--Goyal predictors, and write that their findings are insensitive
+to how standardisations are implemented. Holding the estimation engine fixed, I show that four data-construction
+choices the paper does not pin down move this Sharpe ratio from \nAInSR{} to \nBInSR{} and its alpha t-statistic
+from \nAInT{} to \nBInT: where the predictors' expanding standardisation starts, the inflation publication lag, the
+market-return series, and centred versus uncentred return volatility. One choice uses inflation before its
+release. A volatility window that includes the forecast month, used in one public replication, matches the
+published Sharpe ratio but not the alpha. Scored once over 2021--2025, the construction that reproduces the paper
+earns a Sharpe ratio of $\nBPostEnsSR$ against \nBPostBH{} for buy-and-hold.
+
+\medskip
+\noindent\textbf{JEL:} G11, G12, G17, C53.\quad \textbf{Keywords:} return predictability, random features,
+machine learning, market timing, replication.
+\end{abstract}
+
+\section{Introduction}
+
+\citet{kmz2024} (KMZ) time the US stock market with ridge regressions on up to 12{,}000 random Fourier features
+(RFF) of the 15 Welch--Goyal predictors, estimated on rolling 12-month windows. Their headline strategy
+($P = 12{,}000$, ridge penalty $z = 10^3$) has an out-of-sample Sharpe ratio of \nKmzSR{} over 1931--2020 and an
+alpha t-statistic of \nKmzT{} against the volatility-standardised market (their Table~1). On data construction,
+the paper says:
+\begin{quote}
+\small ``We volatility standardize returns and predictors using backward-looking standard deviations that preserve
+the out-of-sample nature of our forecasts. Returns are standardized by their trailing 12-month return standard
+deviation [\dots]. In contrast, predictors are standardized using an expanding window historical standard deviation
+[\dots]. Still, our results are insensitive to this step (none of our findings are sensitive to variations in how
+standardizations are implemented).'' (KMZ, Section 6.1)
+\end{quote}
+KMZ's code is not public, and public replications disagree on the level of the headline Sharpe ratio. A
+replication that follows the text above with a lagged 12-month standard deviation \citep{thisrepo} obtains
+\nRepSR{} (\nRepDraws{} draws; alpha t \nRepT); one public replication \citep{nkonts} obtains \nNkSR{} with a
+volatility window that includes the month being predicted; another \citep{rrikrv} reports \nRrSR.
+
+This note holds the estimation engine fixed and explains the spread. Three findings:
+\begin{enumerate}\itemsep0pt
+\item Four data-construction choices, none of which the paper pins down, move the Sharpe ratio from \nDecASR{} to
+\nDecFourSR{} and the alpha t-statistic from \nDecAT{} to \nDecFourT{} (Table~\ref{tab:decomp}). With all four the
+engine reproduces KMZ's nonlinear \emph{and} linear rows. Three of the choices use only past data; the fourth uses
+inflation without its usual one-month publication lag.
+\item A volatility window that includes the forecast month gives a \emph{partial} match (Sharpe \nLaSR{}, alpha t
+\nLaT{}). Matching the Sharpe ratio alone is therefore weak evidence that a replication is right.
+\item Scored once after the paper's sample (\nPostFirst{} to \nPostLast), the construction that reproduces the
+paper earns a Sharpe ratio of $\nBPostEnsSR$ against \nBPostBH{} for buy-and-hold; the pre-registered one earns
+$\nAPostEnsSR$ against \nAPostBH. Reproducing the in-sample number does not rescue the out-of-sample one.
+\end{enumerate}
+I make no claim about which choices KMZ's own code makes. The point is narrower: the published level is reproduced
+by one reasonable construction and missed by others that are at least as close to the paper's text, so the
+headline number is more sensitive to data construction than the quoted sentence suggests.
+
+\section{Setup}
+
+The engine follows KMZ and is the same in every row below. Each month $t$ the 15 scaled predictors $G_t$ are
+mapped to $P/2$ pairs $\sin(\gamma\,\omega_i^{\top} G_t), \cos(\gamma\,\omega_i^{\top} G_t)$ with $\omega_i \sim
+N(0, I)$ and $\gamma = 2$. Each feature is divided by its standard deviation over the 12 training months; a ridge
+regression without intercept, penalty $z T$ in dual form, is fitted on the pairs $(S_{s}, R_{s+1})$,
+$s = t-12, \dots, t-1$, and the forecast for $R_{t+1}$ is the position. Statistics are computed per draw of
+$\omega$ and averaged over draws, as in KMZ; the alpha is from an OLS regression of the strategy on the scaled
+market return. Targets run from 1931-01 to 2020-12 (1{,}080 months). The dual engine equals a direct primal ridge
+to $10^{-8}$, and on raw (unscaled) returns its ridgeless strategy has an alpha t-statistic of \nRawZeroT{}
+and an information ratio of \nRawZeroIR, against \nNagelRawT{} and \nNagelRawIR{} that \citet{nagel2025} obtains
+with KMZ's own code. Section 3 shows the rest of the gap is in the data, not in the machine.
+
+\section{Four data choices}
+
+Construction A is the pre-registered one from \citet{thisrepo}. Construction B changes four steps, one at a
+time:
+\begin{enumerate}\itemsep0pt
+\item[(i)] \textbf{Start of the predictors' expanding standardisation.} A starts it in 1926-07, the first CRSP
+month; B at each series' first month in the Welch--Goyal file (1871 for the valuation ratios). The scaled series
+differ a lot in the early sample: on common months the correlation between the two versions is \nCorrDp{} for
+the dividend-price ratio and \nCorrLty{} for the long-term yield. Because predictors enter the features through
+$\gamma\,\omega^{\top} G_t$, their scale acts like a kernel bandwidth.
+\item[(ii)] \textbf{Inflation lag.} CPI for month $t$ is published during month $t+1$. \citet{welchgoyal2008}
+therefore lag it one month, and A does too; B uses it unlagged. This is the one choice that uses information not
+available at the end of month $t$ (by about two weeks). KMZ do not say which they use.
+\item[(iii)] \textbf{Market return.} A uses Ken French's Mkt-RF (CRSP value-weighted, all stocks); B uses the
+S\&P~500 return with dividends minus the risk-free rate from the Welch--Goyal file (correlation \nCorrRet).
+\item[(iv)] \textbf{Return volatility.} A divides $r_{t}$ by the standard deviation of $r_{t-12},\dots,r_{t-1}$, as
+the text says; B by the uncentred root mean square of the same twelve returns, which is what \citet{guo2026} and
+\citet{rrikrv} use.
+\end{enumerate}
+Table~\ref{tab:decomp} adds the switches cumulatively. Each adds between \nDecStepMin{} and \nDecStepMax{} to the Sharpe ratio; none
+closes the gap alone. With all four, the engine gives a Sharpe ratio of \nDecFourSR{} (alpha t \nDecFourT, IR \nDecFourIR)
+against KMZ's \nKmzSR{} (\nKmzT, \nKmzIR), and the linear kitchen-sink row matches too (\nDecFourLinSR{} and
+\nDecFourLinT{} against \nKmzLinSR{} and \nKmzLinT). Running the same engine on the data file committed in
+\citet{rrikrv} gives the same numbers (\nExtSR, \nExtT, \nExtIR), so the four switches account for the whole
+difference between the two data files. Swapping only that file's returns into A gives \nHybRetSR; swapping only its
+predictors gives \nHybPredSR: both blocks matter.
+
+\begin{table}[t]
+\centering\small
+\caption{Same engine, different data construction (US, targets 1931-01 to 2020-12, $P = 12{,}000$,
+$z = 10^3$, \nDecDraws{} draws per row, statistics averaged over draws; with 300 draws A gives \nAInSR{} and B
+\nBInSR, Table~\ref{tab:post}). B\&H = the scaled market.}
+\label{tab:decomp}
+\begin{tabular}{lcccccc}
+\toprule
+ & \multicolumn{3}{c}{RFF strategy} & \multicolumn{2}{c}{Linear, $z=10^3$} & B\&H \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-6}
+Construction & Sharpe & $\alpha$ t & IR & Sharpe & $\alpha$ t & Sharpe \\
+\midrule
+A (pre-registered) & \nDecASR & \nDecAT & \nDecAIR & \nDecALinSR & \nDecALinT & \nDecABH \\
++ (i) predictor std from first month in file & \nDecOneSR & \nDecOneT & \nDecOneIR & \nDecOneLinSR & \nDecOneLinT & \nDecOneBH \\
++ (ii) inflation not lagged & \nDecTwoSR & \nDecTwoT & \nDecTwoIR & \nDecTwoLinSR & \nDecTwoLinT & \nDecTwoBH \\
++ (iii) S\&P 500 return (Welch--Goyal file) & \nDecThreeSR & \nDecThreeT & \nDecThreeIR & \nDecThreeLinSR & \nDecThreeLinT & \nDecThreeBH \\
++ (iv) uncentred RMS volatility $=$ B & \nDecFourSR & \nDecFourT & \nDecFourIR & \nDecFourLinSR & \nDecFourLinT & \nDecFourBH \\
+\addlinespace
+\citet{rrikrv} data file, same engine & \nExtSR & \nExtT & \nExtIR & \nExtLinSR & \nExtLinT & -- \\
+KMZ, Table 1 & \nKmzSR & \nKmzT & \nKmzIR & \nKmzLinSR & \nKmzLinT & -- \\
+\midrule
+A with look-ahead window (3 draws) & \nLaSR & \nLaT & \nLaIR & \nLaLinSR & \nLaLinT & \nLaBH \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{A look-ahead window gives a partial match}
+
+\citet{nkonts} scales the return to be predicted by \texttt{returns.rolling(12).std()}, a window that ends with,
+and so contains, $\Rplus$. Applied to construction A, this gives a Sharpe ratio of \nLaSR, close to KMZ's
+\nKmzSR, and the linear ridgeless Sharpe ratio of $\nLaLinZero$ that KMZ report. But the alpha t-statistic is only
+\nLaT{} (KMZ: \nKmzT) and the linear $z = 10^3$ Sharpe ratio is \nLaLinSR{} (KMZ: \nKmzLinSR). The mechanism is
+simple. When a month's own return is in its scale, an extreme month dominates the window: with the other eleven
+returns fixed and $r_{t+1} \to \pm\infty$, the scaled return tends to $\pm\sqrt{12} \approx \pm 3.46$ whatever
+its size. Crashes are capped, so the scaled market itself looks better (buy-and-hold Sharpe \nLaBH{} against
+\nLagBH{} with the lagged window), and a mostly-long strategy inherits that gain while its alpha against the
+equally inflated benchmark rises much less. An earlier version of the replication repository took this partial
+match as the likely source of the gap; Table~\ref{tab:decomp} shows it is not needed. The practical lesson for
+replicators is to match the Sharpe ratio and the alpha jointly.
+
+This timing issue is different from the one in \citet[Appendix A]{nagel2025}, who shows that dividing returns
+by a properly lagged volatility can by itself create spurious predictability, and for that reason works with
+unscaled returns.
+
+\section{After the paper's sample}
+
+Construction B was defined after the pre-registered runs, so its only clean test is after the paper's
+sample. It was scored once, as pre-declared, on the \nBPostN{} months from \nPostFirst{} to \nPostLast{} (the
+Welch--Goyal file ends in 2025-12), with the same 300 draws as construction A; Table~\ref{tab:post} reports the
+strategy that averages the forecasts over draws, which is the one an investor could trade (per-draw averages are
+within 0.01). In sample, B is within KMZ's numbers; after the sample, both constructions lose to buy-and-hold by
+more than half a Sharpe ratio, and B's alpha is negative. The linear ridge does better than the RFF strategy in both.
+
+\begin{table}[t]
+\centering\small
+\caption{In sample and after the sample ($P = 12{,}000$, $z = 10^3$, \nBDraws{} draws; each construction against
+its own scaled market). In sample: statistics averaged over draws, as KMZ. After the sample: the strategy that
+averages forecasts over draws, Sharpe ratio with its standard error \citep{lo2002}.}
+\label{tab:post}
+\begin{tabular}{lcccccc}
+\toprule
+ & \multicolumn{2}{c}{1931--2020} & \multicolumn{4}{c}{\nPostFirst{} to \nPostLast{} (\nBPostN{} months)} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-7}
+Construction & Sharpe & $\alpha$ t & Sharpe [SE] & $\alpha$ t & B\&H & Linear \\
+\midrule
+A (pre-registered) & \nAInSR & \nAInT & $\nAPostEnsSR$ [\nAPostEnsSE] & \nAPostEnsT & \nAPostBH & \nAPostLinSR \\
+B (reproduces KMZ) & \nBInSR & \nBInT & $\nBPostEnsSR$ [\nBPostEnsSE] & $\nBPostEnsT$ & \nBPostBH & \nBPostLinSR \\
+KMZ, Table 1 & \nKmzSR & \nKmzT & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Five years is a short window. The standard error of an annualised Sharpe ratio over \nBPostN{} months is about
+\nBPostEnsSE, and the chance of an alpha t-statistic above 1.645 if the true information ratio were KMZ's \nKmzIR{}
+is only about one in six. The evidence is that the strategy did not behave as advertised, not that it is
+significantly negative. The cross-section points the same way: with construction A's recipe on Jensen--Kelly--Pedersen
+predictors \citep{jkp2023}, the strategy beats buy-and-hold in \nCtryWins{} of \nCtry{} non-US markets, Nagel's
+volatility-timed momentum beats it in \nCtryVm, and the pooled cross-country alpha t-statistic is \nPoolT{}
+\citep{thisrepo}. Those runs use A's centred volatility; whether choice (iv) changes them is untested.
+
+\section{Related work}
+
+\citet{nagel2025} shows that with $T = 12$ the RFF forecasts are close to a volatility-timed momentum rule.
+\citet{buncic2025} attributes the virtue of complexity to the zero-intercept restriction and to averaging
+performance measures across random draws instead of averaging forecasts. \citet{cartea2025} show that measurement
+error in the predictors caps the benefit of complexity, and \citet{carteashi2025} that random-feature gains can be
+mechanical. \citet{fallahgoul2025} shows that within-window standardisation changes the kernel the RFF approximate,
+and derives sample-size bounds that 12-month windows do not meet. \citet{guo2026} find that ridge and ridgeless
+RFF models do not beat the historical mean. This note is complementary: before asking why the strategy works, it
+asks how much of the published level depends on data choices the paper does not report.
+
+\section{Conclusion}
+
+With the estimation engine held fixed, four data choices move the headline Sharpe ratio of KMZ from \nDecASR{} to
+\nDecFourSR. One of them uses inflation two weeks before it is published. A look-ahead volatility window matches
+the Sharpe ratio but not the alpha. The construction that reproduces the paper's in-sample numbers does not
+beat buy-and-hold after the sample, and neither does the pre-registered one. Replications of high-dimensional return predictors
+should report their data construction as precisely as their model, and match several statistics, not one.
+
+{\sloppy\paragraph{Data and code.} Everything is in the repository cited in the title footnote: the pre-registration
+and the dated change log (\texttt{PLAN.md}), the scripts that produce every table
+(\texttt{scripts/construction\_b.py}, \texttt{scripts/diag\_external\_data.py},
+\texttt{scripts/replication\_diagnostics.py}) and the result files the numbers are read from
+(\texttt{paper/numbers.json} is generated from them by \texttt{python -m voc.note}). Data: Welch--Goyal monthly
+file (2025 vintage), Ken French data library, JKP global factors. The \citet{rrikrv} data file is read, not
+redistributed; its SHA-256 is recorded in \texttt{results/external\_data\_diagnostic.json}.\par}
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+\end{document}
