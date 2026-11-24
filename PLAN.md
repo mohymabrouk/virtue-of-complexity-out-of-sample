@@ -305,3 +305,14 @@ the background with a log file.
       for both constructions. Scored once; output `results/construction_b.json`.
     - Primary/secondary labels do not change: construction A stays the pre-registered primary; B is reported as
       "the construction that reproduces the paper".
+17. **Result of 16 (`results/construction_b.json`, scored once, finished 2026-11-24T10:35:28+00:00).** The builder with all four
+    switches off reproduces our dataset exactly. Cumulative on 1931-2020 (10 draws), VoC P = 12,000, z = 10³:
+    A 0.31 → (i) 0.34 → (ii) 0.38 → (iii) 0.42 → (iv) = B 0.49; alpha t 1.0 → 3.1. B equals the result on the
+    external file, so the four switches account for the whole difference. With 300 draws B gives 0.49, alpha t 3.1,
+    IR 0.33 (A: 0.31, the same as the official replication). Steps (i), (iii) and (iv) use only past data; step (ii)
+    does not, because CPI for month t is released during month t+1 (about two weeks after the forecast is made).
+    **Post-sample, 2021-01..2025-12 (60 months), seed-averaged forecast: B -0.06 (SE 0.45, alpha t -0.4) against
+    0.71 for its buy-and-hold; A -0.01 against 0.57 on the same months.** Linear ridge z = 10³: B 0.45, A 0.30.
+    The construction that reproduces the paper also loses to buy-and-hold after its sample. Reported in the README
+    (headline, Replication item 6, a dated correction of the look-ahead paragraph, a Related-work section) and in
+    the research note `paper/note.pdf`, whose numbers are written from results/ by `python -m voc.note`.
