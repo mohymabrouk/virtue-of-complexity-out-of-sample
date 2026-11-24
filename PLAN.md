@@ -266,3 +266,18 @@ the background with a log file.
     Sharpe of 0.42 at P = 12,000, z = 10³ (500 draws). README only: a headline paragraph and Replication item 5.
     No model, test or result of this project changed. The intro line no longer refers to a series, and the
     post-sample cumulative figure moved under the headline.
+
+### 2026-11-24, research note (paper-sample diagnostics and one post-sample score of construction B; no Part B run)
+
+14. **Pre-declared before running: a second external replication check.** A literature and code search for the note
+    found a third public KMZ replication, rrikrv/voc-replication (commit 9c77321, 2026-09-28). Its README reports
+    KMZ's Table 1 with a *causal* return scaling (r_t divided by the uncentred RMS of r_{t-12..t-1}): linear
+    z = 10³ Sharpe 0.46 / IR 0.33 (paper 0.46 / 0.33) and RFF P = 12,000, z = 10³ Sharpe 0.495 / IR 0.33
+    (paper 0.47 / 0.31). Its RFF, within-window feature scaling, ridge (z·T in dual form) and window alignment are
+    the same as ours (read, not executed). Our RMS variant gives 0.35, so the remaining difference must be in the
+    data. Diagnostic, data only (none of its code is executed, its CSV is not committed; SHA-256 recorded):
+    `scripts/diag_external_data.py` compares its committed `data/voc_data.csv` with our panel column by column,
+    then runs our unchanged engine on (a) its data, (b) our data, and (c) hybrids that swap one block at a time
+    (returns and return scaling; predictors), P = 12,000, z ∈ {10⁻³, 10³}, 1931-01..2020-12 targets, 10 draws
+    each (seeds 0-9). Output: `results/external_data_diagnostic.json`. Whatever it shows is reported in the note
+    and README as is; the primary specification and every frozen result stay unchanged.
